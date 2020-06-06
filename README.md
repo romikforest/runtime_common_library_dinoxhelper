@@ -36,11 +36,11 @@ noxfile. You can also increase the number of project levels creating nested stru
 I also have here some helper code for some typical tasks I often use in nox files in multiple my projects.
 
 Installation
-____________
+------------
 
 *Comming soon...*
 
 Docummentation
-______________
+--------------
 
 *Comming soon...*
