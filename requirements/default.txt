@@ -1,0 +1,2 @@
+-c constraints/default.txt
+nox==2020.5.24
