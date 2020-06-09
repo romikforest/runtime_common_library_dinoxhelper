@@ -1,0 +1,113 @@
+trigger:
+  branches:
+    include:
+      - refs/tags/*_test
+
+
+pool:
+  vmImage: 'ubuntu-18.04'
+
+variables:
+  artifactFeedProd: 'Data Intelligence Scrum/di_libraries' # the name of an Azure artifacts feed
+  artifactFeedTest: 'Data Intelligence Scrum/di_libraries_test' # the name of an Azure artifacts feed
+  replaceSectionProd: 'di_libraries'
+  replaceSectionTest: 'di_libraries_test'
+  pythonVersion: '3.7.7'
+
+steps:
+
+- script: |
+    set -e
+
+    python_path="/opt/hostedtoolcache/Python/$(pythonVersion)/x64"
+
+    [ -d "$python_path" ] && exit 0
+
+    python_url="https://www.python.org/ftp/python/$(pythonVersion)/Python-$(pythonVersion).tgz"
+    tmp_path="/tmp/python_installation"
+    complete_lock_path="/opt/hostedtoolcache/Python/$(pythonVersion)/x64.complete"
+
+    mkdir -p "$python_path"
+    mkdir -p "$tmp_path"
+    cd "$_"
+    wget -qO- "$python_url" | tar -zxf - --strip 1
+    ./configure --enable-optimizations --prefix="$python_path"
+    make install
+    rm -r "$tmp_path"
+    touch "$complete_lock_path"
+    cd "$python_path/bin"
+    ln "python3" "python"
+    ln "pip3" "pip"
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: $(pythonVersion)
+
+- script: |
+    set -e
+    python --version
+    which python
+    python -m pip --version
+    python -m pip install --no-cache-dir -U pip
+    python -m pip install --no-cache-dir -U -r requirements/default.txt
+    for file in requirements/extras/*
+    do
+      if [[ -f $file ]]; then
+        python -m pip install --no-cache-dir -U -r $file
+      fi
+    done
+  displayName: 'Install dependencies'
+
+- script: python -m pip install --no-cache-dir -U pip setuptools wheel twine
+  displayName: Install build tools
+
+- script: python setup.py sdist bdist_wheel
+  displayName: Build package
+
+- task: TwineAuthenticate@0
+  displayName: Configure twine authentication prod
+  inputs:
+    artifactFeeds: $(artifactFeedProd)
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- task: TwineAuthenticate@0
+  displayName: Configure twine authentication test
+  inputs:
+    artifactFeeds: $(artifactFeedTest)
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/test'))
+
+- script: |
+    set -e
+    echo 'File:'; cat $(PYPIRC_PATH)
+  displayName: Print pypirc file
+
+
+- script: |
+    set -e
+    sed -i -e 's!$(artifactFeedProd)!$(replaceSectionProd)!g' $(PYPIRC_PATH)
+  displayName: Replace section prod
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- script: |
+    set -e
+    sed -i -e 's!$(artifactFeedTest)!$(replaceSectionTest)!g' $(PYPIRC_PATH)
+  displayName: Replace section test
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/test'))
+
+
+- script: |
+    set -e
+    echo 'File:'; cat $(PYPIRC_PATH)
+  displayName: Print pypirc file after correction
+
+- script: |
+    set -e
+    python -m twine upload -r "$(replaceSectionProd)" --config-file $(PYPIRC_PATH) dist/*
+  displayName: Publish artifacts for prod
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- script: |
+    set -e
+    python -m twine upload -r "$(replaceSectionTest)" --config-file $(PYPIRC_PATH) dist/*
+  displayName: Publish artifacts for test
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/test'))
