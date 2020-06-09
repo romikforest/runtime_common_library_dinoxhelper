@@ -1,7 +1,7 @@
 from pathlib import Path
 from setuptools import setup, find_packages
 
-from dinoxhelper.version import __version__ as version
+from dinoxhelper.metadata import __version__ as version
 
 BUNDLES = {}
 

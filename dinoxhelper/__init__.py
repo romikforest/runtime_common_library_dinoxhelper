@@ -1,2 +1,2 @@
-from .version import __version__
+from .metadata import __version__
 from .noxhelper import *
