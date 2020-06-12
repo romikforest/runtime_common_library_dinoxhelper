@@ -102,12 +102,12 @@ def install_di_library(library, extras=None, base_path=None):
         repository = join(base_path, repository)
     try:
         session.log(f'Try to install {library} with pip')
-        session.install(f'{library}[{extras}]')
+        session.install('-U', f'{library}[{extras}]')
     except nox.command.CommandFailed:
         session.log(f'Try to install {library} from the local development installation path')
-        session.install('-r', join(repository, join('requirements', 'default.txt')))
+        session.install('-U', '-r', join(repository, join('requirements', 'default.txt')))
         if extras:
-            session.install('-r', join(repository, 'requirements', 'extras', f'{extras}.txt'))
+            session.install('-U',  '-r', join(repository, 'requirements', 'extras', f'{extras}.txt'))
         session.install(repository)
 
 
@@ -119,7 +119,7 @@ def setup_pip():
         session.env['PIP_EXTRA_INDEX_URL'] = os.environ.get('PIP_EXTRA_INDEX_URL')
 
     session.install('-U', 'pip')
-    session.install('wheel', 'setuptools')
+    session.install('-U', 'wheel', 'setuptools', 'certifi')
 
 
 work_folder = os.path.abspath(os.getcwd())
