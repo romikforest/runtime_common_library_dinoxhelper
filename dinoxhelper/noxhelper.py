@@ -110,7 +110,7 @@ def install_di_library(library, extras=None, base_path=None):
         session.log(f'Try to install {library} from the local development installation path')
         session.install('-U', '-r', join(repository, join('requirements', 'default.txt')))
         if extras:
-            extras = extras.split(,)
+            extras = extras.split(',')
             for item in extras:
                 item = item.strip()
                 session.install('-U',  '-r', join(repository, 'requirements', 'extras', f'{item}.txt'))
