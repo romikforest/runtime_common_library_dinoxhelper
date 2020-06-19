@@ -1,9 +1,10 @@
 from pathlib import Path
 from setuptools import setup, find_packages
 
-from dinoxhelper.metadata import __version__ as version
+from dinoxhelper import metadata
 
-BUNDLES = {}
+BUNDLES = {
+}
 
 def strip_comments(l):
     return l.split('#', 1)[0].strip()
@@ -34,13 +35,13 @@ def extras(*p):
 def extras_require():
     return {x: extras(x + '.txt') for x in BUNDLES}
 
-setup(name='di-nox-helper',
-      version=version,
-      url='https://swodataintelligence@dev.azure.com/swodataintelligence/Data%20Intelligence%20Scrum/_git/runtime-common-library-dinoxhelper',
-      license='SWO',
-      author='Koptev, Roman',
-      author_email='roman.koptev@softwareone.com',
-      description='DI Nox Helper functions to manage hierarchical nox projects',
+setup(name=metadata.name,
+      version=metadata.version,
+      url=metadata.url,
+      license=metadata.license,
+      author=metadata.author,
+      author_email=metadata.author_email,
+      description=metadata.description,
       packages=find_packages(exclude=['tests', 'examples', 'docs']),
       python_requires='>=3.6.0',
       install_requires=reqs('default.txt'),
