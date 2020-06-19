@@ -102,12 +102,18 @@ def install_di_library(library, extras=None, base_path=None):
         repository = join(base_path, repository)
     try:
         session.log(f'Try to install {library} with pip')
-        session.install('-U', f'{library}[{extras}]')
+        if extras:
+            session.install('-U', f'{library}[{extras}]')
+        else:
+            session.install('-U', f'{library}')
     except nox.command.CommandFailed:
         session.log(f'Try to install {library} from the local development installation path')
         session.install('-U', '-r', join(repository, join('requirements', 'default.txt')))
         if extras:
-            session.install('-U',  '-r', join(repository, 'requirements', 'extras', f'{extras}.txt'))
+            extras = extras.split(,)
+            for item in extras:
+                item = item.strip()
+                session.install('-U',  '-r', join(repository, 'requirements', 'extras', f'{item}.txt'))
         session.install(repository)
 
 
