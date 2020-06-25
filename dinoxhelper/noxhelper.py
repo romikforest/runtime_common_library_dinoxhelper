@@ -126,6 +126,8 @@ def setup_pip(no_extra_index=False):
     if not no_extra_index:
         if os.environ.get('PIP_EXTRA_INDEX_URL'):
             session.env['PIP_EXTRA_INDEX_URL'] = os.environ.get('PIP_EXTRA_INDEX_URL')
+    else if 'PIP_EXTRA_INDEX_URL' in session.env:
+        del session.env['PIP_EXTRA_INDEX_URL']
 
     session.install('-U', 'pip')
     session.install('-U', 'wheel', 'setuptools', 'certifi')
