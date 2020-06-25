@@ -4,7 +4,7 @@ version_file = os.path.join(os.path.dirname(__file__), 'version.py')
 if os.path.isfile(version_file):
     from .version import __version__ as version
 else:
-    version = '0.0.1dev0'
+    version = '0.0.1dev1'
 
 name = 'dinoxhelper'
 copyright = '2020, SoftwareONE'
