@@ -12,7 +12,7 @@ Welcome to library documentation!
 
 Library main
 ===================
-.. automodule:: dilibraries
+.. automodule:: dinoxhelper
    :members:
 
 

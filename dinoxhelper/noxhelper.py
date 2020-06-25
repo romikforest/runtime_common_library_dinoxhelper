@@ -92,14 +92,6 @@ def install_di_library(library, extras=None, base_path=None):
 
     session = get_session()
 
-    if library == 'dilibraries':
-        repository = 'runtime-common-library-di_libraries'
-    else:
-        repository = f'runtime-common-library-{library}'
-    if base_path is None:
-        repository = join(nox_work_folder, 'projects', repository)
-    else:
-        repository = join(base_path, repository)
     try:
         session.log(f'Try to install {library} with pip')
         if extras:
@@ -108,6 +100,14 @@ def install_di_library(library, extras=None, base_path=None):
             session.install('-U', f'{library}')
     except nox.command.CommandFailed:
         session.log(f'Try to install {library} from the local development installation path')
+        if library == 'dilibraries':
+            repository = 'runtime-common-library-di_libraries'
+        else:
+            repository = f'runtime-common-library-{library}'
+        if base_path is None:
+            repository = join(nox_work_folder, 'projects', repository)
+        else:
+            repository = join(base_path, repository)
         session.install('-U', '-r', join(repository, join('requirements', 'default.txt')))
         if extras:
             extras = extras.split(',')
@@ -117,12 +117,13 @@ def install_di_library(library, extras=None, base_path=None):
         session.install(repository)
 
 
-def setup_pip():
+def setup_pip(no_extra_index=False):
 
     session = get_session()
 
-    if os.environ.get('PIP_EXTRA_INDEX_URL'):
-        session.env['PIP_EXTRA_INDEX_URL'] = os.environ.get('PIP_EXTRA_INDEX_URL')
+    if not no_extra_index:
+        if os.environ.get('PIP_EXTRA_INDEX_URL'):
+            session.env['PIP_EXTRA_INDEX_URL'] = os.environ.get('PIP_EXTRA_INDEX_URL')
 
     session.install('-U', 'pip')
     session.install('-U', 'wheel', 'setuptools', 'certifi')
