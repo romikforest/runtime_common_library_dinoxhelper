@@ -8,6 +8,8 @@ try:
 except ImportError:
     import builtins
 
+nox.options.error_on_missing_interpreters = True
+
 
 def get_session():
     stack = inspect.stack()
