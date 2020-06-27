@@ -1,0 +1,29 @@
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - deploy/versions/version-prod.yml
+
+resources:
+  repositories:
+    - repository: pipeline_templates
+      type: git
+      name: 'Data Intelligence Scrum/infra-pipelines-devops'
+
+variables:
+- name: mainTemplateName
+  value: universal-dilibrary-build
+- template: '../versions/version-prod.yml'
+- template: 'azure-pipelines-common-vars.yml'
+- template: '/azure/deploy/pipelines/${{variables.mainTemplateName}}-vars.yml@pipeline_templates'
+
+name: $(Date:yyyyMMdd)$(Rev:.r)_$(SourceBranchName)_$(BuildDefinitionName)_${{variables.full_version}}
+
+pool:
+  vmImage: $(vmImage)
+
+extends:
+  template: '/azure/deploy/pipelines/${{variables.mainTemplateName}}.yml@pipeline_templates'
+

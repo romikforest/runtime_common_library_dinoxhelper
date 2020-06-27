@@ -110,13 +110,31 @@ def install_di_library(library, extras=None, base_path=None):
             repository = join(nox_work_folder, 'projects', repository)
         else:
             repository = join(base_path, repository)
-        session.install('-U', '-r', join(repository, join('requirements', 'default.txt')))
+        session.install('-U', '-r', join(repository, 'requirements', 'default.txt'))
         if extras:
             extras = extras.split(',')
             for item in extras:
                 item = item.strip()
                 session.install('-U',  '-r', join(repository, 'requirements', 'extras', f'{item}.txt'))
         session.install(repository)
+
+def install_own_dependencies(extras=None):
+    from os.path import join
+
+    if os.path.isdir('src'):
+        session.install('-U', '-r', join('src', 'requirements.txt'))
+        if extras:
+            extras = extras.split(',')
+            for item in extras:
+                item = item.strip()
+                session.install('-U',  '-r', join('deploy', 'requirements', f'{item}.txt'))
+    else:
+        session.install('-U', '-r', join('requirements', 'default.txt'))
+        if extras:
+            extras = extras.split(',')
+            for item in extras:
+                item = item.strip()
+                session.install('-U', '-r', join('requirements', 'extras', f'{item}.txt'))
 
 
 def setup_pip(no_extra_index=False):
@@ -141,6 +159,7 @@ builtins.nox = nox
 builtins.source_bash_file = source_bash_file
 builtins.load_env_vars = load_env_vars
 builtins.install_di_library = install_di_library
+builtins.install_own_dependencies = install_own_dependencies
 builtins.setup_pip = setup_pip
 builtins.is_main_nox_module = is_main_nox_module
 if not (os.environ.get('NOT_MAIN_NOX_MODULE') == 1):
