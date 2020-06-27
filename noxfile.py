@@ -1,6 +1,6 @@
 import dinoxhelper
 
-def common_setup(session, extras=None, no_extra_index=False, skip_library_installation=False):
+def common_setup(session, extras=None, no_extra_index=True):
     import os
 
     session.run('python', '--version')
@@ -14,21 +14,19 @@ def common_setup(session, extras=None, no_extra_index=False, skip_library_instal
     if no_extra_index and 'PIP_EXTRA_INDEX_URL' in session.env:
       del session.env['PIP_EXTRA_INDEX_URL']
 
-    if not skip_library_installation:
-        install_di_library('dinoxhelper', extras='fast')
 
 
 @nox.session(python=['python3.7.3', 'python3.7.7'])
 @nox.parametrize('extras', [None])
 def test(session, extras):
-    common_setup(session, extras=extras, no_extra_index=True, skip_library_installation=True)
+    common_setup(session, extras=extras)
     session.install('pytest')
     session.run('python', '-m', 'pytest')
 
 
 @nox.session(python='python3.7.7', reuse_venv=True)
 def docs(session):
-    common_setup(session, no_extra_index=True, skip_library_installation=True)
+    common_setup(session)
     session.install('Sphinx')
     session.install('rinohtype')
     session.chdir('docs')
