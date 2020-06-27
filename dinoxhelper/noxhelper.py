@@ -121,6 +121,8 @@ def install_di_library(library, extras=None, base_path=None):
 def install_own_dependencies(extras=None):
     from os.path import join
 
+    session = get_session()
+
     if os.path.isdir('src'):
         session.install('-U', '-r', join('src', 'requirements.txt'))
         if extras:
