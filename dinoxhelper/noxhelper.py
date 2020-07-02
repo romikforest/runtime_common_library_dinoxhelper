@@ -245,7 +245,7 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     session.install('rinohtype')
     session.chdir('docs')
     session.run('make', 'html', external=True)
-    session.run('sphinx-build', '-b', 'rinoh', 'source', 'build/rinoh', external=True)
+    session.run('sphinx-build', '-b', 'rinoh', 'source', os.path.join('build', 'rinoh'), external=True)
 
 
 def standard_build_di_library(session, extras=None, dilibraries=None):
