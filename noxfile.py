@@ -1,34 +1,33 @@
 import dinoxhelper
 
-def common_setup(session, extras=None, no_extra_index=True):
-    import os
+lib_name = 'dinoxhelper'
 
-    session.run('python', '--version')
+dilibraries = tuple()
 
-    base_path = os.path.dirname(__file__)
-    session.chdir(base_path)
-
-    setup_pip()
-    install_own_dependencies(extras)
-
-    if no_extra_index and 'PIP_EXTRA_INDEX_URL' in session.env:
-      del session.env['PIP_EXTRA_INDEX_URL']
-
-
-
-@nox.session(python=['python3.7.3', 'python3.7.7'])
+@nox.session(python=test_pythons)
 @nox.parametrize('extras', [None])
-def test(session, extras):
-    common_setup(session, extras=extras)
-    session.install('pytest')
-    session.run('python', '-m', 'pytest')
+def test(session, extras, dilibraries=dilibraries):
+    """Run the test suite."""
+    session.log(f'Run test in {lib_name}')
+    standard_di_test(session, extras=extras, dilibraries=dilibraries)
 
 
-@nox.session(python='python3.7.7', reuse_venv=True)
-def docs(session):
-    common_setup(session)
-    session.install('Sphinx')
-    session.install('rinohtype')
-    session.chdir('docs')
-    session.run('make', 'html', external=True)
-    session.run('sphinx-build', '-b', 'rinoh', 'source', 'build/rinoh')
+@nox.session(python=main_python)
+def docs(session, dilibraries=dilibraries):
+    """Generate documentation."""
+    session.log(f'Run docs in {lib_name}')
+    standard_di_docs(session, dilibraries=dilibraries)
+
+
+@nox.session(python=main_python)
+def install_dev(session):
+    """Create development virtual environment."""
+    session.log(f'Run install_dev in {lib_name}')
+    common_setup(session, dilibraries=dilibraries)
+
+
+@nox.session(python=main_python)
+def build_library(session):
+    """Build library package. (Add version file manually.)"""
+    session.log(f'Run build_library in {lib_name}')
+    standard_build_di_library(session, dilibraries=dilibraries)

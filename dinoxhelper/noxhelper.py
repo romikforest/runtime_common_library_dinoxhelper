@@ -3,6 +3,27 @@ import inspect
 import nox
 import os
 
+main_python = 'python3.7.7'
+test_pythons = ['python3.7.3', 'python3.7.7']
+kafka_presets = [
+    'HDInsights_prod',
+    'HDInsights_test',
+    'k8s_prod',
+    'k8s_test',
+    'linux_local',
+    'mac_local',
+]
+
+main_env_presets = [
+    'test',
+    'prod',
+]
+
+local_env_presets = [
+    'mac_local',
+    'linux_local',
+]
+
 try:
     import __builtin__ as builtins
 except ImportError:
@@ -104,10 +125,15 @@ def install_di_library(library, extras=None, base_path=None):
         session.log(f'Try to install {library} from the local development installation path')
         if library == 'dilibraries':
             repository = 'runtime-common-library-di_libraries'
+        elif library == 'disettings':
+            repository = 'temporary-common-library-disettings'
         else:
             repository = f'runtime-common-library-{library}'
         if base_path is None:
-            repository = join(nox_work_folder, 'projects', repository)
+            new_repository = join(nox_work_folder, 'projects', repository)
+            if not os.path.isdir(new_repository):
+                new_repository = join('..', repository)
+            repository = new_repository
         else:
             repository = join(base_path, repository)
         session.install('-U', '-r', join(repository, 'requirements', 'default.txt'))
@@ -153,6 +179,81 @@ def setup_pip(no_extra_index=False):
     session.install('-U', 'wheel', 'setuptools', 'certifi')
 
 
+def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
+    import inspect
+    import os
+    dilibraries = dilibraries or {}
+
+    session.run('python', '--version')
+
+    # base_path = os.path.dirname(__file__)
+    nested_level = 0
+    base_path = os.path.dirname((inspect.stack()[nested_level])[1])
+    while base_path == os.path.dirname(__file__):
+        nested_level += 1
+        base_path = os.path.dirname((inspect.stack()[nested_level])[1])
+    session.chdir(base_path)
+
+    setup_pip()
+
+    for entry in dilibraries:
+        lib_name, lib_extras = entry
+        install_di_library(lib_name, extras=lib_extras)
+
+    install_own_dependencies(extras)
+
+    if no_extra_index and 'PIP_EXTRA_INDEX_URL' in session.env:
+      del session.env['PIP_EXTRA_INDEX_URL']
+
+
+def run_di_app(session, main_env, local_env, kafka, extras=None, dilibraries=None):
+    from distutils.dir_util import copy_tree
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    basepath = os.path.join(nox_work_folder, 'projects', 'runtime-common-library-disecrets', 'disecrets')
+    if not os.path.isdir(basepath):
+        basepath = os.path.join(nox_work_folder, '..', 'runtime-common-library-disecrets', 'disecrets')
+    session.run(
+        'python',
+        os.path.join(basepath, 'one_config.py'),
+        os.path.join('src', 'di_description.json'),
+        f'azure/k8s/{main_env}',
+        local_env,
+        os.path.join('env', f'{main_env}-{local_env}.json'),
+        os.path.join(basepath, 'in')
+    )
+    copy_tree(
+        os.path.join(basepath, 'in', 'data', 'kafka_settings'),
+        os.path.join('env', 'kafka')
+    )
+
+    load_env_vars(os.path.join('env', f'{main_env}-{local_env}.json'))
+    load_env_vars(os.path.join('env', 'kafka', f'{kafka}.json'))
+
+    session.chdir(os.path.join('src', 'app'))
+    session.run('python', 'app.py')
+
+
+def standard_di_test(session, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('pytest')
+    session.run('python', '-m', 'pytest')
+
+
+def standard_di_docs(session, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('Sphinx')
+    session.install('rinohtype')
+    session.chdir('docs')
+    session.run('make', 'html', external=True)
+    session.run('sphinx-build', '-b', 'rinoh', 'source', 'build/rinoh', external=True)
+
+
+def standard_build_di_library(session, extras=None, dilibraries=None):
+    common_setup(session, dilibraries=dilibraries)
+    # session.install('--no-cache-dir', '-U', 'setuptools', 'wheel')
+    session.run('python', 'setup.py', 'sdist', 'bdist_wheel')
+
+
 work_folder = os.path.abspath(os.getcwd())
 trim_length = len(work_folder) + 1
 folders = search_nox_sub_projects(work_folder)
@@ -164,6 +265,16 @@ builtins.install_di_library = install_di_library
 builtins.install_own_dependencies = install_own_dependencies
 builtins.setup_pip = setup_pip
 builtins.is_main_nox_module = is_main_nox_module
+builtins.run_di_app = run_di_app
+builtins.common_setup = common_setup
+builtins.standard_di_test = standard_di_test
+builtins.standard_di_docs = standard_di_docs
+builtins.standard_build_di_library = standard_build_di_library
+builtins.main_python = main_python
+builtins.test_pythons = test_pythons
+builtins.kafka_presets = kafka_presets
+builtins.main_env_presets = main_env_presets
+builtins.local_env_presets = local_env_presets
 if not (os.environ.get('NOT_MAIN_NOX_MODULE') == 1):
   builtins.nox_work_folder = work_folder
 builtins.nox_paths = folders
