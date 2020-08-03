@@ -40,7 +40,7 @@ def extras_require():
 setup(name=metadata.name,
       version=metadata.version,
       url=metadata.url,
-      license=metadata.license,
+      license=metadata.lib_license,
       author=metadata.author,
       author_email=metadata.author_email,
       description=metadata.description,
