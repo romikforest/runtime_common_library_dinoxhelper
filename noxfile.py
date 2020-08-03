@@ -4,6 +4,7 @@ lib_name = 'dinoxhelper'
 
 dilibraries = tuple()
 
+
 @nox.session(python=test_pythons)
 @nox.parametrize('extras', [None])
 def test(session, extras, dilibraries=dilibraries):

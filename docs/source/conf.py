@@ -30,7 +30,7 @@ metadata = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(metadata)
 
 project = metadata.name
-copyright = metadata.copyright
+lib_copyright = metadata.lib_copyright
 author = metadata.author
 description = metadata.description
 
@@ -179,7 +179,7 @@ texinfo_documents = [
 epub_title = project
 epub_author = author
 epub_publisher = author
-epub_copyright = copyright
+epub_copyright = lib_copyright
 
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.

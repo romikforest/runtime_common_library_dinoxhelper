@@ -6,6 +6,7 @@ from dinoxhelper import metadata
 BUNDLES = {
 }
 
+
 def strip_comments(l):
     return l.split('#', 1)[0].strip()
 
@@ -34,6 +35,7 @@ def extras(*p):
 
 def extras_require():
     return {x: extras(x + '.txt') for x in BUNDLES}
+
 
 setup(name=metadata.name,
       version=metadata.version,

@@ -7,9 +7,9 @@ else:
     version = 'dev'
 
 name = 'dinoxhelper'
-copyright = '2020, SoftwareONE'
+lib_copyright = '2020, SoftwareONE'
 author = 'Koptev, Roman'
 description = 'Helper library to manage hierarchical nox-based projects'
-license = 'SWO'
+lib_license = 'SWO'
 url = 'https://swodataintelligence@dev.azure.com/swodataintelligence/Data%20Intelligence%20Scrum/_git/runtime-common-library-dinoxhelper'
 author_email = 'roman.koptev@softwareone.com'

@@ -91,7 +91,7 @@ def call_from_nox_subprojects():
             env = {'NOT_MAIN_NOX_MODULE': '1'}
             if os.environ.get('PIP_EXTRA_INDEX_URL'):
                 env['PIP_EXTRA_INDEX_URL'] = os.environ.get('PIP_EXTRA_INDEX_URL')
-            session.run('python', '-m', 'nox', '-s', method_name, env = env)
+            session.run('python', '-m', 'nox', '-s', method_name, env=env)
 
 
 def load_env_vars(path):
@@ -141,8 +141,9 @@ def install_di_library(library, extras=None, base_path=None):
             extras = extras.split(',')
             for item in extras:
                 item = item.strip()
-                session.install('-U',  '-r', join(repository, 'requirements', 'extras', f'{item}.txt'))
+                session.install('-U', '-r', join(repository, 'requirements', 'extras', f'{item}.txt'))
         session.install(repository)
+
 
 def install_own_dependencies(extras=None):
     from os.path import join
@@ -155,7 +156,7 @@ def install_own_dependencies(extras=None):
             extras = extras.split(',')
             for item in extras:
                 item = item.strip()
-                session.install('-U',  '-r', join('deploy', 'requirements', f'{item}.txt'))
+                session.install('-U', '-r', join('deploy', 'requirements', f'{item}.txt'))
     else:
         session.install('-U', '-r', join('requirements', 'default.txt'))
         if extras:
@@ -166,7 +167,6 @@ def install_own_dependencies(extras=None):
 
 
 def setup_pip(no_extra_index=False):
-
     session = get_session()
 
     if not no_extra_index:
@@ -203,7 +203,7 @@ def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
     install_own_dependencies(extras)
 
     if no_extra_index and 'PIP_EXTRA_INDEX_URL' in session.env:
-      del session.env['PIP_EXTRA_INDEX_URL']
+        del session.env['PIP_EXTRA_INDEX_URL']
 
 
 def run_di_app(session, main_env, local_env, kafka, extras=None, dilibraries=None):
@@ -249,9 +249,33 @@ def standard_di_docs(session, extras=None, dilibraries=None):
 
 
 def standard_build_di_library(session, extras=None, dilibraries=None):
-    common_setup(session, dilibraries=dilibraries)
+    common_setup(session, extras=extras, dilibraries=dilibraries)
     # session.install('--no-cache-dir', '-U', 'setuptools', 'wheel')
     session.run('python', 'setup.py', 'sdist', 'bdist_wheel')
+
+
+def standard_di_flake8(session, path, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'flake8')
+    session.run('python', '-m', 'flake8', path, 'tests')
+
+
+def standard_di_pylint(session, path, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'pylint')
+    session.run('python', '-m', 'pylint', path, os.path.join('tests', path))
+
+
+def standard_di_bandit(session, path, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'bandit')
+    session.run('python', '-m', 'bandit', '-r', path)
+
+
+def standard_di_isort(session, path, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'isort')
+    session.run('python', '-m', 'isort', path, '--diff')
 
 
 work_folder = os.path.abspath(os.getcwd())
@@ -270,13 +294,17 @@ builtins.common_setup = common_setup
 builtins.standard_di_test = standard_di_test
 builtins.standard_di_docs = standard_di_docs
 builtins.standard_build_di_library = standard_build_di_library
+builtins.standard_di_flake8 = standard_di_flake8
+builtins.standard_di_pylint = standard_di_pylint
+builtins.standard_di_bandit = standard_di_bandit
+builtins.standard_di_isort = standard_di_isort
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
 builtins.main_env_presets = main_env_presets
 builtins.local_env_presets = local_env_presets
 if not (os.environ.get('NOT_MAIN_NOX_MODULE') == 1):
-  builtins.nox_work_folder = work_folder
+    builtins.nox_work_folder = work_folder
 builtins.nox_paths = folders
 # print(folders)
 builtins.nox_modules = [__import__(folder, fromlist=[None]) for folder in folders]
