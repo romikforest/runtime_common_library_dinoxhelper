@@ -241,8 +241,9 @@ def standard_di_test(session, extras=None, dilibraries=None):
 
 def standard_di_docs(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
-    session.install('Sphinx')
-    session.install('rinohtype')
+    session.install('-U', 'Sphinx')
+    session.install('-U', 'rinohtype')
+    session.install('-U', 'recommonmark')
     session.chdir('docs')
     session.run('make', 'html', external=True)
     session.run('sphinx-build', '-b', 'rinoh', 'source', os.path.join('build', 'rinoh'), external=True)
