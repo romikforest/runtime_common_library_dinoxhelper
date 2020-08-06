@@ -1,7 +1,8 @@
-from .envutils import source_bash_file
 import inspect
 import nox
 import os
+
+from .envutils import source_bash_file
 
 main_python = 'python3.7.7'
 test_pythons = ['python3.7.3', 'python3.7.7']
@@ -85,7 +86,8 @@ def call_from_nox_subprojects():
                 session.log('Try to install dinoxhelper with pip')
                 session.install('dinoxhelper')
             except nox.command.CommandFailed:
-                session.log('Try to install dinoxhelper from the current dinoxhelper installation path')
+                session.log(
+                    'Try to install dinoxhelper from the current dinoxhelper installation path')
                 session.install(nox_helper_path)
             session.chdir(os.path.dirname(module.__file__))
             env = {'NOT_MAIN_NOX_MODULE': '1'}
@@ -122,7 +124,8 @@ def install_di_library(library, extras=None, base_path=None):
         else:
             session.install('-U', f'{library}')
     except nox.command.CommandFailed:
-        session.log(f'Try to install {library} from the local development installation path')
+        session.log(
+            f'Try to install {library} from the local development installation path')
         if library == 'dilibraries':
             repository = 'runtime-common-library-di_libraries'
         elif library == 'disettings':
@@ -141,7 +144,8 @@ def install_di_library(library, extras=None, base_path=None):
             extras = extras.split(',')
             for item in extras:
                 item = item.strip()
-                session.install('-U', '-r', join(repository, 'requirements', 'extras', f'{item}.txt'))
+                session.install('-U', '-r',
+                                join(repository, 'requirements', 'extras', f'{item}.txt'))
         session.install(repository)
 
 
@@ -193,6 +197,7 @@ def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
         nested_level += 1
         base_path = os.path.dirname((inspect.stack()[nested_level])[1])
     session.chdir(base_path)
+    print(base_path)
 
     setup_pip()
 
@@ -206,12 +211,15 @@ def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
         del session.env['PIP_EXTRA_INDEX_URL']
 
 
-def run_di_app(session, main_env, local_env, kafka, extras=None, dilibraries=None):
+def run_di_app(session, main_env, local_env, kafka, extras=None,
+               dilibraries=None):
     from distutils.dir_util import copy_tree
     common_setup(session, extras=extras, dilibraries=dilibraries)
-    basepath = os.path.join(nox_work_folder, 'projects', 'runtime-common-library-disecrets', 'disecrets')
+    basepath = os.path.join(nox_work_folder, 'projects',
+                            'runtime-common-library-disecrets', 'disecrets')
     if not os.path.isdir(basepath):
-        basepath = os.path.join(nox_work_folder, '..', 'runtime-common-library-disecrets', 'disecrets')
+        basepath = os.path.join(nox_work_folder, '..',
+                                'runtime-common-library-disecrets', 'disecrets')
     session.run(
         'python',
         os.path.join(basepath, 'one_config.py'),
@@ -244,9 +252,11 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     session.install('-U', 'Sphinx')
     session.install('-U', 'rinohtype')
     session.install('-U', 'commonmark', 'recommonmark')
+    session.install('-U', 'sphinx-autodoc-typehints')
     session.chdir('docs')
     session.run('make', 'html', external=True)
-    session.run('sphinx-build', '-b', 'rinoh', 'source', os.path.join('build', 'rinoh'), external=True)
+    session.run('sphinx-build', '-b', 'rinoh', 'source',
+                os.path.join('build', 'rinoh'), external=True)
 
 
 def standard_build_di_library(session, extras=None, dilibraries=None):
@@ -258,13 +268,15 @@ def standard_build_di_library(session, extras=None, dilibraries=None):
 def standard_di_flake8(session, path, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'flake8')
-    session.run('python', '-m', 'flake8', path, 'tests')
+    session.run('python', '-m', 'flake8', '--max-line-length=100', path, 'tests')
 
 
 def standard_di_pylint(session, path, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pylint')
-    session.run('python', '-m', 'pylint', path, os.path.join('tests', path))
+    session.run('python', '-m', 'pylint', '--max-line-length=100',
+                '--good-names=i,j,k,ex,Run,_,f,v,db,x,y,z,ix,e,d,s,q,qp,t,n,m,r,u,p,h,c',
+                path, 'tests')
 
 
 def standard_di_bandit(session, path, extras=None, dilibraries=None):
@@ -273,16 +285,31 @@ def standard_di_bandit(session, path, extras=None, dilibraries=None):
     session.run('python', '-m', 'bandit', '-r', path)
 
 
-def standard_di_isort(session, path, extras=None, dilibraries=None):
-    common_setup(session, extras=extras, dilibraries=dilibraries)
+def standard_di_isort_check(session, path):
+    common_setup(session)
     session.install('-U', 'isort')
-    session.run('python', '-m', 'isort', path, '--diff')
+    session.run('python', '-m', 'isort', '--diff', '-m', '3', path)
+    session.run('python', '-m', 'isort', '--check-only', '-m', '3', path)
+
+
+def standard_di_isort(session, path):
+    common_setup(session)
+    session.install('-U', 'isort')
+    session.run('python', '-m', 'isort', '-m', '3', path)
+
+
+def standard_di_mypy(session, path, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'mypy')
+    session.run('python', '-m', 'mypy', '--ignore-missing-imports',
+                '--allow-redefinition', path)
 
 
 work_folder = os.path.abspath(os.getcwd())
 trim_length = len(work_folder) + 1
 folders = search_nox_sub_projects(work_folder)
-folders = [folder[trim_length:].replace('/', '.') + '.noxfile' for folder in folders]
+folders = [folder[trim_length:].replace('/', '.') + '.noxfile' for folder in
+           folders]
 builtins.nox = nox
 builtins.source_bash_file = source_bash_file
 builtins.load_env_vars = load_env_vars
@@ -298,7 +325,9 @@ builtins.standard_build_di_library = standard_build_di_library
 builtins.standard_di_flake8 = standard_di_flake8
 builtins.standard_di_pylint = standard_di_pylint
 builtins.standard_di_bandit = standard_di_bandit
+builtins.standard_di_isort_check = standard_di_isort_check
 builtins.standard_di_isort = standard_di_isort
+builtins.standard_di_mypy = standard_di_mypy
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
@@ -308,6 +337,7 @@ if not (os.environ.get('NOT_MAIN_NOX_MODULE') == 1):
     builtins.nox_work_folder = work_folder
 builtins.nox_paths = folders
 # print(folders)
-builtins.nox_modules = [__import__(folder, fromlist=[None]) for folder in folders]
+builtins.nox_modules = [__import__(folder, fromlist=[None]) for folder in
+                        folders]
 builtins.call_from_nox_subprojects = call_from_nox_subprojects
 builtins.called_nox_sessions = []
