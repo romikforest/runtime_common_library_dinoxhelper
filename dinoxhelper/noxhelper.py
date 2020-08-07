@@ -275,13 +275,13 @@ def standard_di_flake8(session, path, extras=None, dilibraries=None):
 def standard_di_pylint(session, path, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pylint')
-    session.run('python', '-m', 'pylint', path, 'tests')
+    session.run('python', '-m', 'pylint', '--rcfile=setup.cfg', path, 'tests')
 
 
 def standard_di_bandit(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'bandit')
-    session.run('python', '-m', 'bandit', '-r', '-c', './.bandit.cfg', '--ini', './.bandit.ini')
+    session.run('python', '-m', 'bandit', '-r', '-c', './.bandit.cfg', '--ini', 'setup.cfg')
     # session.run('bandit-config-generator', '-o', './.bandit.cfg')
 
 def standard_di_isort_check(session):
