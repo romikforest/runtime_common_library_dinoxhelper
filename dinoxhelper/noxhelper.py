@@ -269,15 +269,13 @@ def standard_build_di_library(session, extras=None, dilibraries=None):
 def standard_di_flake8(session, path, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'flake8')
-    session.run('python', '-m', 'flake8', '--max-line-length=100', path, 'tests')
+    session.run('python', '-m', 'flake8', path, 'tests')
 
 
 def standard_di_pylint(session, path, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pylint')
-    session.run('python', '-m', 'pylint', '--max-line-length=100',
-                '--good-names=i,j,k,ex,Run,_,f,v,db,x,y,z,ix,e,d,s,q,qp,t,n,m,r,u,p,h,c',
-                path, 'tests')
+    session.run('python', '-m', 'pylint', path, 'tests')
 
 
 def standard_di_bandit(session, extras=None, dilibraries=None):
