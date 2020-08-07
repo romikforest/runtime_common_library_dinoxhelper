@@ -243,7 +243,8 @@ def run_di_app(session, main_env, local_env, kafka, extras=None,
 
 def standard_di_test(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
-    session.install('pytest')
+    session.install('-U', 'pytest-cov')
+    session.install('-U', 'pytest')
     session.run('python', '-m', 'pytest')
 
 
