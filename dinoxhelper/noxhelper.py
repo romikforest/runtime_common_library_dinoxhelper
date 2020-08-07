@@ -279,11 +279,11 @@ def standard_di_pylint(session, path, extras=None, dilibraries=None):
                 path, 'tests')
 
 
-def standard_di_bandit(session, path, extras=None, dilibraries=None):
+def standard_di_bandit(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'bandit')
-    session.run('python', '-m', 'bandit', '-r', path)
-
+    session.run('python', '-m', 'bandit', '-r', '-c', './.bandit.cfg', '--ini', './.bandit.ini')
+    # session.run('bandit-config-generator', '-o', './.bandit.cfg')
 
 def standard_di_isort_check(session):
     common_setup(session)
