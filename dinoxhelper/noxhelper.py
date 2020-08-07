@@ -285,17 +285,17 @@ def standard_di_bandit(session, path, extras=None, dilibraries=None):
     session.run('python', '-m', 'bandit', '-r', path)
 
 
-def standard_di_isort_check(session, path):
+def standard_di_isort_check(session):
     common_setup(session)
     session.install('-U', 'isort')
-    session.run('python', '-m', 'isort', '--diff', '-m', '3', path)
-    session.run('python', '-m', 'isort', '--check-only', '-m', '3', path)
+    session.run('python', '-m', 'isort', '.', '--diff')
+    session.run('python', '-m', 'isort', '.', '--check-only')
 
 
-def standard_di_isort(session, path):
+def standard_di_isort(session):
     common_setup(session)
     session.install('-U', 'isort')
-    session.run('python', '-m', 'isort', '-m', '3', path)
+    session.run('python', '-m', 'isort', '.')
 
 
 def standard_di_mypy(session, extras=None, dilibraries=None):
