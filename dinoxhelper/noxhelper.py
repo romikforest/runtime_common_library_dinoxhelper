@@ -306,6 +306,11 @@ def standard_di_mypy(session, extras=None, dilibraries=None):
     session.run('python', '-m', 'mypy')
 
 
+def standard_di_check_outdated(session, extras=None, dilibraries=None):
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.run('python', '-m', 'pip', 'list', '--outdated')
+
+
 work_folder = os.path.abspath(os.getcwd())
 trim_length = len(work_folder) + 1
 folders = search_nox_sub_projects(work_folder)
@@ -329,6 +334,7 @@ builtins.standard_di_bandit = standard_di_bandit
 builtins.standard_di_isort_check = standard_di_isort_check
 builtins.standard_di_isort = standard_di_isort
 builtins.standard_di_mypy = standard_di_mypy
+builtins.standard_di_check_outdated = standard_di_check_outdated
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
