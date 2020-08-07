@@ -268,7 +268,7 @@ def standard_build_di_library(session, extras=None, dilibraries=None):
 
 def standard_di_flake8(session, path, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
-    session.install('-U', 'flake8')
+    session.install('-U', 'flake8', 'flake8-docstrings')
     session.run('python', '-m', 'flake8', path, 'tests')
 
 
