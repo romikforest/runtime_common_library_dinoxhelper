@@ -305,6 +305,19 @@ def standard_di_mypy(session, extras=None, dilibraries=None):
     session.run('python', '-m', 'mypy')
 
 
+def standard_di_black_check(session):
+    common_setup(session)
+    session.install('-U', 'brunette')
+    session.run('python', '-m', 'brunette', '.', '--config=setup.cfg', '--diff')
+    session.run('python', '-m', 'brunette', '.', '--config=setup.cfg', '--check')
+
+
+def standard_di_black(session):
+    common_setup(session)
+    session.install('-U', 'brunette')
+    session.run('python', '-m', 'brunette', '.', '--config=setup.cfg')
+
+
 def standard_di_check_outdated(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.run('python', '-m', 'pip', 'list', '--outdated')
@@ -334,6 +347,8 @@ builtins.standard_di_isort_check = standard_di_isort_check
 builtins.standard_di_isort = standard_di_isort
 builtins.standard_di_mypy = standard_di_mypy
 builtins.standard_di_check_outdated = standard_di_check_outdated
+builtins.standard_di_black_check = standard_di_black_check
+builtins.standard_di_black = standard_di_black
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
