@@ -298,11 +298,10 @@ def standard_di_isort(session, path):
     session.run('python', '-m', 'isort', '-m', '3', path)
 
 
-def standard_di_mypy(session, path, extras=None, dilibraries=None):
+def standard_di_mypy(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'mypy')
-    session.run('python', '-m', 'mypy', '--ignore-missing-imports',
-                '--allow-redefinition', path)
+    session.run('python', '-m', 'mypy')
 
 
 work_folder = os.path.abspath(os.getcwd())
