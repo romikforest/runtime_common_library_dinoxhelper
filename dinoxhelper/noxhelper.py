@@ -301,6 +301,7 @@ def standard_di_isort(session):
 def standard_di_mypy(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'mypy')
+    session.install('-U', 'lxml')
     session.run('python', '-m', 'mypy')
 
 
