@@ -257,6 +257,8 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     session.install('-U', 'rinohtype')
     session.install('-U', 'commonmark', 'recommonmark')
     session.install('-U', 'sphinx-autodoc-typehints')
+    session.install('-U', 'sphinx-markdown-tables')
+    session.install('-U', 'sphinx_rtd_theme')
     session.chdir('docs')
     session.run('make', 'html', external=True)
     shutil.rmtree('build/text', ignore_errors=True)
