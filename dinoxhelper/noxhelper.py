@@ -2,6 +2,7 @@ from configparser import ConfigParser
 import inspect
 import nox
 import os
+import platform
 import shutil
 
 from .envutils import source_bash_file
@@ -340,6 +341,59 @@ def standard_di_proselint(session):
     session.run('python', '-m', 'proselint', *paths.split(','))
 
 
+def standard_di_vale(session):
+    """Check code with vale."""
+
+    def install_vale():
+        files = {
+            'Linux': 'vale',
+            'Darwin': 'vale',
+            'Windows': 'vale.exe',
+        }
+        markers = {
+            'Linux': 'Linux',
+            'Darwin': 'macOS',
+            'Windows': 'Windows',
+        }
+        system = platform.system()
+        file = files[system]
+        if not os.path.isfile(f'vale/{file}'):
+            marker = markers[system]
+            path = 'https://github.com/errata-ai/vale/releases/download/' \
+                   'v2.3.0/vale_2.3.0_{marker}_64-bit.tar.gz'
+            session.run('sh', '-c',
+                        f'curl -L {path.format(marker=marker)} | '
+                        f'tar -C "vale/" -xvf - '
+                        f'"vale"',
+                        external=True)
+
+    def prepare_dir():
+        if not os.path.isdir('vale'):
+            os.mkdir('vale')
+        if not os.path.isdir('vale/styles'):
+            os.mkdir('vale/styles')
+
+    def install_style(name):
+        if not os.path.isdir(f'vale/styles/{name}'):
+            session.run('sh', '-c',
+                        f'curl "https://codeload.github.com/errata-ai/{name}/tar.gz/master" | '
+                        f'tar -C "vale/styles/" --strip-components=1 -xvf - '
+                        f'"{name}-master/{name}/*" ',
+                        external=True)
+
+    install_vale()
+    session.install('-U', 'Sphinx')  # To install rst2html for the Joblint
+    prepare_dir()
+    config = ConfigParser()
+    config.read('setup.cfg')
+    style_list = config['vale']['styles'].split(',')
+    for style in style_list:
+        install_style(style)
+    paths = config['vale']['paths'].split(',')
+    vale_path = os.path.abspath(os.path.join('vale', 'vale'))
+    session.run(vale_path, *paths, external=True)
+
+
 work_folder = os.path.abspath(os.getcwd())
 trim_length = len(work_folder) + 1
 folders = search_nox_sub_projects(work_folder)
@@ -367,6 +421,7 @@ builtins.standard_di_check_outdated = standard_di_check_outdated
 builtins.standard_di_black_check = standard_di_black_check
 builtins.standard_di_black = standard_di_black
 builtins.standard_di_proselint = standard_di_proselint
+builtins.standard_di_vale = standard_di_vale
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
