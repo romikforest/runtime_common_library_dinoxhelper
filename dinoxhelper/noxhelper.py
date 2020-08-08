@@ -2,6 +2,7 @@ from configparser import ConfigParser
 import inspect
 import nox
 import os
+import shutil
 
 from .envutils import source_bash_file
 
@@ -257,6 +258,8 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     session.install('-U', 'sphinx-autodoc-typehints')
     session.chdir('docs')
     session.run('make', 'html', external=True)
+    shutil.rmtree('build/text', ignore_errors=True)
+    session.run('make', 'text', external=True)
     session.run('sphinx-build', '-b', 'rinoh', 'source',
                 os.path.join('build', 'rinoh'), external=True)
 
@@ -328,6 +331,15 @@ def standard_di_check_outdated(session, extras=None, dilibraries=None):
     session.run('python', '-m', 'pip', 'list', '--outdated')
 
 
+def standard_di_proselint(session):
+    common_setup(session)
+    session.install('-U', 'proselint')
+    config = ConfigParser()
+    config.read('setup.cfg')
+    paths = config['proselint']['paths']
+    session.run('python', '-m', 'proselint', *paths.split(','))
+
+
 work_folder = os.path.abspath(os.getcwd())
 trim_length = len(work_folder) + 1
 folders = search_nox_sub_projects(work_folder)
@@ -354,6 +366,7 @@ builtins.standard_di_mypy = standard_di_mypy
 builtins.standard_di_check_outdated = standard_di_check_outdated
 builtins.standard_di_black_check = standard_di_black_check
 builtins.standard_di_black = standard_di_black
+builtins.standard_di_proselint = standard_di_proselint
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
