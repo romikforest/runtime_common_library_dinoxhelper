@@ -266,11 +266,11 @@ def standard_build_di_library(session, extras=None, dilibraries=None):
     session.run('python', 'setup.py', 'sdist', 'bdist_wheel')
 
 
-def standard_di_flake8(session, path, extras=None, dilibraries=None):
+def standard_di_flake8(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'flake8', 'flake8-docstrings', 'mccabe', 'pep8-naming')
     session.run('python', '-m', 'flake8', '--version')
-    session.run('python', '-m', 'flake8', path, 'tests')
+    session.run('python', '-m', 'flake8')
 
 
 def standard_di_pylint(session, path, extras=None, dilibraries=None):
