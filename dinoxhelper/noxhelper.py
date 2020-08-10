@@ -245,6 +245,7 @@ def run_di_app(session, main_env, local_env, kafka, extras=None,
 
 
 def standard_di_test(session, extras=None, dilibraries=None):
+    """Run the test suite."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pytest-cov')
     session.install('-U', 'pytest')
@@ -252,28 +253,34 @@ def standard_di_test(session, extras=None, dilibraries=None):
 
 
 def standard_di_docs(session, extras=None, dilibraries=None):
+    """Generate documentation."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'Sphinx')
-    session.install('-U', 'rinohtype')
+    session.install('-U', 'rinohtype', 'Pillow')
     session.install('-U', 'commonmark', 'recommonmark')
     session.install('-U', 'sphinx-autodoc-typehints')
     session.install('-U', 'sphinx-markdown-tables')
-    session.install('-U', 'sphinx_rtd_theme')
+    session.install('-U', 'sphinx_rtd_theme==0.5.0')
     session.chdir('docs')
     session.run('make', 'html', external=True)
     shutil.rmtree('build/text', ignore_errors=True)
     session.run('make', 'text', external=True)
     session.run('sphinx-build', '-b', 'rinoh', 'source',
                 os.path.join('build', 'rinoh'), external=True)
+    session.run('make', 'linkcheck', external=True)
+    session.run('sphinx-build', '-b', 'coverage', 'source',
+                os.path.join('build', 'coverage'), external=True)
 
 
 def standard_build_di_library(session, extras=None, dilibraries=None):
+    """Build library package (Add version file manually)."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     # session.install('--no-cache-dir', '-U', 'setuptools', 'wheel')
     session.run('python', 'setup.py', 'sdist', 'bdist_wheel')
 
 
 def standard_di_flake8(session, extras=None, dilibraries=None):
+    """Check code with flake8."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'flake8',
                     'flake8-docstrings',
@@ -286,6 +293,7 @@ def standard_di_flake8(session, extras=None, dilibraries=None):
 
 
 def standard_di_pylint(session, extras=None, dilibraries=None):
+    """Check code with pylint."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pylint')
     config = ConfigParser()
@@ -295,6 +303,7 @@ def standard_di_pylint(session, extras=None, dilibraries=None):
 
 
 def standard_di_bandit(session, extras=None, dilibraries=None):
+    """Check code with bandit."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'bandit')
     session.run('python', '-m', 'bandit', '-r', '-c', './.bandit.cfg', '--ini', 'setup.cfg')
@@ -302,6 +311,7 @@ def standard_di_bandit(session, extras=None, dilibraries=None):
 
 
 def standard_di_isort_check(session):
+    """Check code with isort."""
     common_setup(session)
     session.install('-U', 'isort')
     session.run('python', '-m', 'isort', '.', '--diff')
@@ -309,12 +319,14 @@ def standard_di_isort_check(session):
 
 
 def standard_di_isort(session):
+    """Sort imports with isort."""
     common_setup(session)
     session.install('-U', 'isort')
     session.run('python', '-m', 'isort', '.')
 
 
 def standard_di_mypy(session, extras=None, dilibraries=None):
+    """Check code with mypy."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'mypy')
     session.install('-U', 'lxml')
@@ -322,6 +334,7 @@ def standard_di_mypy(session, extras=None, dilibraries=None):
 
 
 def standard_di_black_check(session):
+    """Print code diffs for black (brunette) formatting."""
     common_setup(session)
     session.install('-U', 'brunette')
     session.run('python', '-m', 'brunette', '.', '--config=setup.cfg', '--diff')
@@ -329,17 +342,20 @@ def standard_di_black_check(session):
 
 
 def standard_di_black(session):
+    """Format code with black (brunette)."""
     common_setup(session)
     session.install('-U', 'brunette')
     session.run('python', '-m', 'brunette', '.', '--config=setup.cfg')
 
 
 def standard_di_check_outdated(session, extras=None, dilibraries=None):
+    """Check for outdated packages."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.run('python', '-m', 'pip', 'list', '--outdated')
 
 
 def standard_di_proselint(session):
+    """Check code with proselint."""
     common_setup(session)
     session.install('-U', 'proselint')
     config = ConfigParser()
