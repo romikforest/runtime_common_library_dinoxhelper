@@ -1,11 +1,12 @@
 from configparser import ConfigParser
+import importlib
 import inspect
 import nox
 import os
 import platform
 import shutil
 
-from .envutils import source_bash_file
+from dinoxhelper.envutils import source_bash_file
 
 main_python = 'python3.7.7'
 test_pythons = ['python3.7.3', 'python3.7.7']
@@ -87,7 +88,7 @@ def call_from_nox_subprojects():
             session.install('nox')
             try:
                 session.log('Try to install dinoxhelper with pip')
-                session.install('dinoxhelper')
+                session.install('dinoxhelper>=0.0.0dev0')
             except nox.command.CommandFailed:
                 session.log(
                     'Try to install dinoxhelper from the current dinoxhelper installation path')
@@ -123,9 +124,9 @@ def install_di_library(library, extras=None, base_path=None):
     try:
         session.log(f'Try to install {library} with pip')
         if extras:
-            session.install('-U', f'{library}[{extras}]')
+            session.install('-U', f'{library}[{extras}]>=0.0.0dev0')
         else:
-            session.install('-U', f'{library}')
+            session.install('-U', f'{library}>=0.0.0dev0')
     except nox.command.CommandFailed:
         session.log(
             f'Try to install {library} from the local development installation path')
@@ -254,22 +255,35 @@ def standard_di_test(session, extras=None, dilibraries=None):
 
 def standard_di_docs(session, extras=None, dilibraries=None):
     """Generate documentation."""
+    spec = importlib.util.spec_from_file_location('setup', './setup.py')
+    setup_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(setup_module)
+    metadata = setup_module.metadata
+
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'Sphinx')
-    session.install('-U', 'rinohtype', 'Pillow')
+    session.install('-U', 'rinohtype', 'Pillow', 'pygments')
     session.install('-U', 'commonmark', 'recommonmark')
     session.install('-U', 'sphinx-autodoc-typehints')
     session.install('-U', 'sphinx-markdown-tables')
     session.install('-U', 'sphinx_rtd_theme==0.5.0')
     session.chdir('docs')
-    session.run('make', 'html', external=True)
-    shutil.rmtree('build/text', ignore_errors=True)
-    session.run('make', 'text', external=True)
-    session.run('sphinx-build', '-b', 'rinoh', 'source',
-                os.path.join('build', 'rinoh'), external=True)
-    session.run('make', 'linkcheck', external=True)
-    session.run('sphinx-build', '-b', 'coverage', 'source',
-                os.path.join('build', 'coverage'), external=True)
+    shutil.rmtree('build', ignore_errors=True)
+    # shutil.rmtree(os.path.join('build', 'text'), ignore_errors=True)
+    shutil.rmtree(os.path.join('source', '_api_reference'), ignore_errors=True)
+    shutil.rmtree(os.path.join('source', '_autosummary'), ignore_errors=True)
+    # session.run('make', 'html', external=True)
+    # session.run('make', 'text', external=True)
+    # session.run('sphinx-build', '-b', 'rinoh', 'source',
+    #             os.path.join('build', 'rinoh'), external=True)
+    session.run('sphinx-build', '-b', 'html', 'source',
+                os.path.join('build', 'html', 'en', metadata.version),
+                '-D', 'language=en',
+                external = True,
+                )
+    # session.run('make', 'linkcheck', external=True)
+    # session.run('sphinx-build', '-b', 'coverage', 'source',
+    #             os.path.join('build', 'coverage'), external=True)
 
 
 def standard_build_di_library(session, extras=None, dilibraries=None):
