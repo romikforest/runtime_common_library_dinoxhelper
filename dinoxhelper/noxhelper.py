@@ -260,6 +260,28 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     spec.loader.exec_module(setup_module)
     metadata = setup_module.metadata
 
+    config = ConfigParser()
+    config.read('setup.cfg')
+    if 'docs' in config:
+        config = config['docs']
+    else:
+        config = {}
+    extra_modules = config.get('extra_modules')
+    if extra_modules:
+        extra_modules = set(extra_modules.split(','))
+    else:
+        extra_modules = set()
+    langs = config.get('langs')
+    if langs:
+        langs = set(langs.split(','))
+    else:
+        langs = set(['en'])
+    engines = config.get('engines')
+    if engines:
+        engines = set(engines.split(','))
+    else:
+        engines = set()
+
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'Sphinx')
     session.install('-U', 'rinohtype', 'Pillow', 'pygments')
@@ -267,6 +289,9 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     session.install('-U', 'sphinx-autodoc-typehints')
     session.install('-U', 'sphinx-markdown-tables')
     session.install('-U', 'sphinx_rtd_theme==0.5.0')
+    session.install('-U', 'sphinx-autoapi')
+    for module in extra_modules:
+        session.install('-U', module)
     session.chdir('docs')
     shutil.rmtree('build', ignore_errors=True)
     # shutil.rmtree(os.path.join('build', 'text'), ignore_errors=True)
@@ -276,11 +301,14 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     # session.run('make', 'text', external=True)
     # session.run('sphinx-build', '-b', 'rinoh', 'source',
     #             os.path.join('build', 'rinoh'), external=True)
-    session.run('sphinx-build', '-b', 'html', 'source',
-                os.path.join('build', 'html', 'en', metadata.version),
-                '-D', 'language=en',
-                external = True,
-                )
+    if 'html' in engines:
+        engines.remove('html')
+        for lang in langs:
+            session.run('sphinx-build', '-b', 'html', 'source',
+                        os.path.join('build', 'html', lang, metadata.version),
+                        '-D', f'language={lang}',
+                        external = True,
+                        )
     # session.run('make', 'linkcheck', external=True)
     # session.run('sphinx-build', '-b', 'coverage', 'source',
     #             os.path.join('build', 'coverage'), external=True)
@@ -308,12 +336,35 @@ def standard_di_flake8(session, extras=None, dilibraries=None):
 
 def standard_di_pylint(session, extras=None, dilibraries=None):
     """Check code with pylint."""
-    common_setup(session, extras=extras, dilibraries=dilibraries)
-    session.install('-U', 'pylint')
     config = ConfigParser()
     config.read('setup.cfg')
-    paths = config['pylint']['paths']
+    paths = None
+    if 'pylint' in config:
+        paths = config['pylint'].get('paths')
+    if not paths:
+        session.error('There are no paths to check with pylint in setup.cfg. Exiting...')
+        return
+
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'pylint')
+
     session.run('python', '-m', 'pylint', '--rcfile=setup.cfg', *paths.split(','))
+
+
+def standard_di_pytype(session, extras=None, dilibraries=None):
+    """Check code with pytype."""
+    config = ConfigParser()
+    config.read('setup.cfg')
+    inputs = None
+    if 'pytype' in config:
+        inputs = config['pytype'].get('inputs')
+    if not inputs:
+        session.error('There are no inputs to check with pytype in setup.cfg. Exiting...')
+        return
+
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    session.install('-U', 'pytype')
+    session.run('python', '-m', 'pytype')
 
 
 def standard_di_bandit(session, extras=None, dilibraries=None):
@@ -370,11 +421,17 @@ def standard_di_check_outdated(session, extras=None, dilibraries=None):
 
 def standard_di_proselint(session):
     """Check code with proselint."""
-    common_setup(session)
-    session.install('-U', 'proselint')
     config = ConfigParser()
     config.read('setup.cfg')
-    paths = config['proselint']['paths']
+    paths = None
+    if 'proselint' in config:
+        paths = config['proselint'].get('paths')
+    if not paths:
+        session.error('There are no paths to check with proselint in setup.cfg. Exiting...')
+        return
+
+    common_setup(session)
+    session.install('-U', 'proselint')
     session.run('python', '-m', 'proselint', *paths.split(','))
 
 
@@ -423,12 +480,21 @@ def standard_di_vale(session):
     prepare_dir()
     config = ConfigParser()
     config.read('setup.cfg')
-    style_list = config['vale']['styles'].split(',')
-    for style in style_list:
+    style_list = None
+    paths = None
+    if 'vale' in config:
+        style_list = config['vale'].get('style_list')
+        paths = config['vale'].get('paths')
+    if not paths:
+        session.error('There is no paths to check for vale in setup.cfg. Exiting...')
+        return
+    if not style_list:
+        session.error('There is no style_list for vale in setup.cfg. Exiting...')
+        return
+    for style in style_list.split(','):
         install_style(style)
-    paths = config['vale']['paths'].split(',')
     vale_path = os.path.abspath(os.path.join('vale', 'vale'))
-    session.run(vale_path, *paths, external=True)
+    session.run(vale_path, *paths.split(','), external=True)
 
 
 work_folder = os.path.abspath(os.getcwd())
@@ -464,6 +530,7 @@ builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
 builtins.main_env_presets = main_env_presets
 builtins.local_env_presets = local_env_presets
+builtins.standard_di_pytype = standard_di_pytype
 if not (os.environ.get('NOT_MAIN_NOX_MODULE') == 1):
     builtins.nox_work_folder = work_folder
 builtins.nox_paths = folders
