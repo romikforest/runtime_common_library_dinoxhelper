@@ -17,6 +17,7 @@ kafka_presets = [
     'k8s_test',
     'linux_local',
     'mac_local',
+    'win_local',
 ]
 
 main_env_presets = [
@@ -27,7 +28,12 @@ main_env_presets = [
 local_env_presets = [
     'mac_local',
     'linux_local',
+    'win_local',
 ]
+
+SHELL = 'sh'
+SHELL_EXEC = '-c'
+CP = 'cp'
 
 try:
     import __builtin__ as builtins
@@ -35,6 +41,41 @@ except ImportError:
     import builtins
 
 nox.options.error_on_missing_interpreters = True
+
+
+def load_metadata():
+    spec = importlib.util.spec_from_file_location('setup', './setup.py')
+    setup_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(setup_module)
+    return setup_module.metadata
+
+
+def load_config_section(path, section):
+    config = ConfigParser()
+    config.read(path)
+    if section in config:
+        config = config[section]
+    else:
+        config = {}
+    return config
+
+
+def load_list_config(config, name, default=None):
+    result = config.get(name)
+    if result:
+        if isinstance(result, list):
+            result = set(result)
+        else:
+            result = set(result.split(','))
+    else:
+        if default:
+            if isinstance(default, str):
+                result = set(default.split(','))
+            else:
+                result = set(default)
+        else:
+            result = set()
+    return result
 
 
 def get_session():
@@ -154,24 +195,44 @@ def install_di_library(library, extras=None, base_path=None):
 
 
 def install_own_dependencies(extras=None):
-    from os.path import join
+    from os.path import join, isfile, isdir
 
     session = get_session()
 
-    if os.path.isdir('src'):
-        session.install('-U', '-r', join('src', 'requirements.txt'))
+    if isdir('src'):
+        main_file = join('src', 'requirements.txt')
+        if isfile(main_file):
+            session.install('-U', '-r', main_file)
+        pre_file = join('src', 'pre-requirements.txt')
+        if isfile(pre_file):
+            session.install('-U', '--pre', '-r', pre_file)
         if extras:
             extras = extras.split(',')
             for item in extras:
                 item = item.strip()
-                session.install('-U', '-r', join('deploy', 'requirements', f'{item}.txt'))
+                main_file = join('src', join('deploy', 'requirements', f'{item}.txt'))
+                if isfile(main_file):
+                    session.install('-U', '-r', main_file)
+                pre_file = join('deploy', 'requirements', f'pre-{item}.txt')
+                if isfile(pre_file):
+                    session.install('-U', '--pre', '-r', pre_file)
     else:
-        session.install('-U', '-r', join('requirements', 'default.txt'))
+        main_file = join('requirements', 'default.txt')
+        if isfile(main_file):
+            session.install('-U', '-r', main_file)
+        pre_file = join('requirements', 'pre-default.txt')
+        if isfile(pre_file):
+            session.install('-U', '--pre', '-r', pre_file)
         if extras:
             extras = extras.split(',')
             for item in extras:
                 item = item.strip()
-                session.install('-U', '-r', join('requirements', 'extras', f'{item}.txt'))
+                main_file = join('requirements', 'extras', f'{item}.txt')
+                if isfile(main_file):
+                    session.install('-U', '-r', )
+                pre_file = join('requirements', 'extras', f'pre-{item}.txt')
+                if isfile(pre_file):
+                    session.install('-U', '--pre', '-r', pre_file)
 
 
 def setup_pip(no_extra_index=False):
@@ -188,8 +249,11 @@ def setup_pip(no_extra_index=False):
 
 
 def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
-    import inspect
-    import os
+    if 'COMMON_SETUP_COMPLETED' in session.env:
+        return
+    else:
+        session.env['COMMON_SETUP_COMPLETED'] = ''
+
     dilibraries = dilibraries or {}
 
     session.run('python', '--version')
@@ -201,7 +265,6 @@ def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
         nested_level += 1
         base_path = os.path.dirname((inspect.stack()[nested_level])[1])
     session.chdir(base_path)
-    print(base_path)
 
     setup_pip()
 
@@ -216,7 +279,8 @@ def common_setup(session, extras=None, dilibraries=None, no_extra_index=True):
 
 
 def run_di_app(session, main_env, local_env, kafka, extras=None,
-               dilibraries=None):
+               dilibraries=None,
+               profiler=None):
     from distutils.dir_util import copy_tree
     common_setup(session, extras=extras, dilibraries=dilibraries)
     basepath = os.path.join(nox_work_folder, 'projects',
@@ -242,7 +306,14 @@ def run_di_app(session, main_env, local_env, kafka, extras=None,
     load_env_vars(os.path.join('env', 'kafka', f'{kafka}.json'))
 
     session.chdir(os.path.join('src', 'app'))
-    session.run('python', 'app.py')
+
+    if profiler is None:
+        profiler = os.environ.get('DI_PROFILER')
+
+    if profiler is None:
+        session.run('python', 'app.py')
+    else:
+        session.error(f'Unsupported profiler ({profiler})')
 
 
 def standard_di_test(session, extras=None, dilibraries=None):
@@ -250,68 +321,156 @@ def standard_di_test(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pytest-cov')
     session.install('-U', 'pytest')
+    # shutil.rmtree('code_coverage', ignore_errors=True)
     session.run('python', '-m', 'pytest')
 
 
 def standard_di_docs(session, extras=None, dilibraries=None):
     """Generate documentation."""
-    spec = importlib.util.spec_from_file_location('setup', './setup.py')
-    setup_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(setup_module)
-    metadata = setup_module.metadata
 
-    config = ConfigParser()
-    config.read('setup.cfg')
-    if 'docs' in config:
-        config = config['docs']
-    else:
-        config = {}
-    extra_modules = config.get('extra_modules')
-    if extra_modules:
-        extra_modules = set(extra_modules.split(','))
-    else:
-        extra_modules = set()
-    langs = config.get('langs')
-    if langs:
-        langs = set(langs.split(','))
-    else:
-        langs = set(['en'])
-    engines = config.get('engines')
-    if engines:
-        engines = set(engines.split(','))
-    else:
-        engines = set()
+    session.log('Graphviz should be installed if you want to generate diagrams')
+
+    metadata = load_metadata()
+    config = load_config_section('setup.cfg', 'docs')
+    extra_modules = load_list_config(config, 'extra_modules')
+    langs = load_list_config(config, 'langs', 'en')
+    engines = load_list_config(config, 'engines', 'html,linkcheck,doc_coverage,text')
+    make_targets = load_list_config(config, 'make_targets')
+    tlmgr_extra = load_list_config(config, 'tlmgr_extra')
+    dipdf_base = config.get('dipdf_base', 'latex')
+    if dipdf_base not in ['latex', 'rinoh', 'rst2pdf']:
+        session.error(f'Unsupported base for dipdf ({dipdf_base})')
 
     common_setup(session, extras=extras, dilibraries=dilibraries)
-    session.install('-U', 'Sphinx')
-    session.install('-U', 'rinohtype', 'Pillow', 'pygments')
+    session.install('-U', 'sphinx')
+    session.install('-U', 'pygments')
     session.install('-U', 'commonmark', 'recommonmark')
     session.install('-U', 'sphinx-autodoc-typehints')
     session.install('-U', 'sphinx-markdown-tables')
-    session.install('-U', 'sphinx_rtd_theme==0.5.0')
-    session.install('-U', 'sphinx-autoapi')
+    session.install('-U', 'sphinx_rtd_theme')
+
+    if 'dipdf' in engines:
+        if dipdf_base == 'rinoh':  # rinohtype is AGPL licensed !
+            session.install('-U', 'rinohtype', 'pillow')
+        elif dipdf_base == 'rst2pdf':
+            session.install('-U', 'rst2pdf')
+
+    # # You can install any pypi package, e.g. sphinx-autoapi
+    # # Use extra_modules config variable
+    # session.install('-U', 'sphinx-autoapi')
+    # session.install('-U', 'pylatex')
     for module in extra_modules:
         session.install('-U', module)
+
     session.chdir('docs')
+
     shutil.rmtree('build', ignore_errors=True)
     # shutil.rmtree(os.path.join('build', 'text'), ignore_errors=True)
     shutil.rmtree(os.path.join('source', '_api_reference'), ignore_errors=True)
     shutil.rmtree(os.path.join('source', '_autosummary'), ignore_errors=True)
-    # session.run('make', 'html', external=True)
-    # session.run('make', 'text', external=True)
-    # session.run('sphinx-build', '-b', 'rinoh', 'source',
-    #             os.path.join('build', 'rinoh'), external=True)
+
     if 'html' in engines:
         engines.remove('html')
         for lang in langs:
             session.run('sphinx-build', '-b', 'html', 'source',
-                        os.path.join('build', 'html', lang, metadata.version),
+                        os.path.join('build', lang, metadata.version, 'html'),
                         '-D', f'language={lang}',
                         external = True,
                         )
-    # session.run('make', 'linkcheck', external=True)
-    # session.run('sphinx-build', '-b', 'coverage', 'source',
-    #             os.path.join('build', 'coverage'), external=True)
+
+    if 'dipdf' in engines:
+        engines.remove('dipdf')
+
+        # install latex tools (not finished):
+        #####################################
+        # session.install('-U', 'wget')
+        # if shutil.which('latexmk') is None:
+        #     system = platform.system()
+        #     if system == 'Windows':
+        #         # need to be adapted for win. The url is correct
+        #         session.run(SHELL, SHELL_EXEC,
+        #                     'wget -qO- "https://yihui.org/gh/tinytex/tools/install-windows.bat" | sh')
+        #     else:
+        #         session.run(SHELL, SHELL_EXEC,
+        #                     f'wget -qO- "https://yihui.org/gh/tinytex/tools/install-unx.sh" | {SHELL}')
+        #
+        # # Some packages need to be instaled with tlmgr:
+        #
+        # #    latex-recommended collection-latexrecommended
+        # #    latex-extra collection-latexextra
+        # #    fonts-recommended collection-fontsrecommended
+        #
+        # # Required for my first project (possible they are included in the above packages):
+        # # tlmgr install cmap
+        # # polyglossia
+        # # FreeSerif gnu-freefont
+        # # fncychap fancyhdr titlesec tabulary varwidth wrapfig parskip upquote capt-of needspace
+        # # oberdiek (hypcap) xindy (!) makeindex, pdftex
+        #
+
+        for lang in langs:
+            out_dir = os.path.join('build', lang, metadata.version, 'dipdf')
+
+            if dipdf_base == 'rinoh':  # rinohtype is AGPL licensed !
+                session.run('sphinx-build', '-b', 'rinoh', 'source',
+                            out_dir, '-D', f'language={lang}',
+                            external=True,
+                            )
+            elif dipdf_base == 'rst2pdf':
+                session.run('sphinx-build', '-M', 'pdf', 'source',
+                            out_dir, '-D', f'language={lang}',
+                            external=True,
+                            )
+                pdf_src = os.path.join(out_dir, 'pdf', '*')
+                session.run(SHELL, SHELL_EXEC,
+                            f'{CP} {pdf_src} {out_dir}',
+                            external=True,
+                            )
+            elif dipdf_base == 'latex':
+                for extra in tlmgr_extra:
+                    session.run('tmlgr', 'install', extra)
+                session.run('sphinx-build', '-b', 'latex', 'source',
+                            out_dir, '-D', f'language={lang}',
+                            external=True,
+                            )
+                session.run('make', '-C', out_dir, 'all-pdf', external=True)
+
+
+    if 'linkcheck' in engines:
+        engines.remove('linkcheck')
+        for lang in langs:
+            out_dir = os.path.join('build', lang, metadata.version, 'linkcheck')
+            session.run('sphinx-build', '-b', 'linkcheck', 'source',
+                        out_dir, '-D', f'language={lang}',
+                        external=True,
+                        )
+    if 'doc_coverage' in engines or 'coverage' in engines:
+        if 'doc_coverage' in engines:
+            engines.remove('doc_coverage')
+        if 'coverage' in engines:
+            engines.remove('coverage')
+        for lang in langs:
+            out_dir = os.path.join('build', lang, metadata.version, 'doc_coverage')
+            session.run('sphinx-build', '-b', 'coverage', 'source',
+                        out_dir, '-D', f'language={lang}',
+                        external=True,
+                        )
+
+    for target in engines:
+        for lang in langs:
+            out_dir = os.path.join('build', lang, metadata.version, target)
+            session.run('sphinx-build', '-b', target, 'source',
+                        out_dir, '-D', f'language={lang}',
+                        external=True,
+                        )
+
+    for target in make_targets:
+        for lang in langs:
+            out_dir = os.path.join('build', lang, metadata.version, target)
+            session.run('sphinx-build', '-M', target, 'source',
+                        out_dir, '-D', f'language={lang}',
+                        external=True,
+                        )
 
 
 def standard_build_di_library(session, extras=None, dilibraries=None):
@@ -336,11 +495,8 @@ def standard_di_flake8(session, extras=None, dilibraries=None):
 
 def standard_di_pylint(session, extras=None, dilibraries=None):
     """Check code with pylint."""
-    config = ConfigParser()
-    config.read('setup.cfg')
-    paths = None
-    if 'pylint' in config:
-        paths = config['pylint'].get('paths')
+    config = load_config_section('setup.cfg', 'pylint')
+    paths = load_list_config(config, 'paths')
     if not paths:
         session.error('There are no paths to check with pylint in setup.cfg. Exiting...')
         return
@@ -348,16 +504,13 @@ def standard_di_pylint(session, extras=None, dilibraries=None):
     common_setup(session, extras=extras, dilibraries=dilibraries)
     session.install('-U', 'pylint')
 
-    session.run('python', '-m', 'pylint', '--rcfile=setup.cfg', *paths.split(','))
+    session.run('python', '-m', 'pylint', '--rcfile=setup.cfg', *paths)
 
 
 def standard_di_pytype(session, extras=None, dilibraries=None):
     """Check code with pytype."""
-    config = ConfigParser()
-    config.read('setup.cfg')
-    inputs = None
-    if 'pytype' in config:
-        inputs = config['pytype'].get('inputs')
+    config = load_config_section('setup.cfg', 'pytype')
+    inputs = load_list_config(config, 'inputs')
     if not inputs:
         session.error('There are no inputs to check with pytype in setup.cfg. Exiting...')
         return
@@ -421,18 +574,15 @@ def standard_di_check_outdated(session, extras=None, dilibraries=None):
 
 def standard_di_proselint(session):
     """Check code with proselint."""
-    config = ConfigParser()
-    config.read('setup.cfg')
-    paths = None
-    if 'proselint' in config:
-        paths = config['proselint'].get('paths')
+    config = load_config_section('setup.cfg', 'proselint')
+    paths = load_list_config(config, 'paths')
     if not paths:
         session.error('There are no paths to check with proselint in setup.cfg. Exiting...')
         return
 
     common_setup(session)
     session.install('-U', 'proselint')
-    session.run('python', '-m', 'proselint', *paths.split(','))
+    session.run('python', '-m', 'proselint', *paths)
 
 
 def standard_di_vale(session):
@@ -455,8 +605,8 @@ def standard_di_vale(session):
             marker = markers[system]
             path = 'https://github.com/errata-ai/vale/releases/download/' \
                    'v2.3.0/vale_2.3.0_{marker}_64-bit.tar.gz'
-            session.run('sh', '-c',
-                        f'curl -L {path.format(marker=marker)} | '
+            session.run(SHELL, SHELL_EXEC,
+                        f'wget -qO- {path.format(marker=marker)} | '
                         f'tar -C "vale/" -xvf - '
                         f'"vale"',
                         external=True)
@@ -469,32 +619,46 @@ def standard_di_vale(session):
 
     def install_style(name):
         if not os.path.isdir(f'vale/styles/{name}'):
-            session.run('sh', '-c',
-                        f'curl "https://codeload.github.com/errata-ai/{name}/tar.gz/master" | '
+            session.run(SHELL, SHELL_EXEC,
+                        f'wget -qO- "https://codeload.github.com/errata-ai/{name}/tar.gz/master" | '
                         f'tar -C "vale/styles/" --strip-components=1 -xvf - '
                         f'"{name}-master/{name}/*" ',
                         external=True)
 
+    session.install('-U', 'wget')
     install_vale()
     session.install('-U', 'Sphinx')  # To install rst2html for the Joblint
     prepare_dir()
-    config = ConfigParser()
-    config.read('setup.cfg')
-    style_list = None
-    paths = None
-    if 'vale' in config:
-        style_list = config['vale'].get('style_list')
-        paths = config['vale'].get('paths')
+
+    config = load_config_section('setup.cfg', 'vale')
+    paths = load_list_config(config, 'paths')
+    styles = load_list_config(config, 'styles')
+    exclude = load_list_config(config, 'exclude')
     if not paths:
         session.error('There is no paths to check for vale in setup.cfg. Exiting...')
         return
-    if not style_list:
+    if not styles:
         session.error('There is no style_list for vale in setup.cfg. Exiting...')
         return
-    for style in style_list.split(','):
+    for style in styles:
         install_style(style)
+    exclude = {f"--glob='!{x}'" for x in exclude}
     vale_path = os.path.abspath(os.path.join('vale', 'vale'))
-    session.run(vale_path, *paths.split(','), external=True)
+    session.run(vale_path, *paths, *exclude, external=True)
+
+
+def standard_di_quality_task(session, extras=None, dilibraries=None):
+    """Check for outdated packages."""
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    standard_di_isort(session)
+    standard_di_black(session)
+    standard_di_pylint(session, extras, dilibraries)
+    standard_di_flake8(session, extras, dilibraries)
+    standard_di_mypy(session, extras, dilibraries)
+    standard_di_pytype(session, extras, dilibraries)
+    standard_di_black(session)
+    standard_di_check_outdated(session, extras, dilibraries)
+    session.log('You may run tasks like `vale` and `proselint` manually if you wish.')
 
 
 work_folder = os.path.abspath(os.getcwd())
@@ -525,6 +689,7 @@ builtins.standard_di_black_check = standard_di_black_check
 builtins.standard_di_black = standard_di_black
 builtins.standard_di_proselint = standard_di_proselint
 builtins.standard_di_vale = standard_di_vale
+builtins.standard_di_quality_task = standard_di_quality_task
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
