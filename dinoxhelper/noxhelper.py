@@ -648,7 +648,7 @@ def standard_di_vale(session):
 
 
 def standard_di_quality_task(session, extras=None, dilibraries=None):
-    """Check for outdated packages."""
+    """Format and check code."""
     common_setup(session, extras=extras, dilibraries=dilibraries)
     standard_di_isort(session)
     standard_di_black(session)
@@ -658,6 +658,20 @@ def standard_di_quality_task(session, extras=None, dilibraries=None):
     standard_di_pytype(session, extras, dilibraries)
     standard_di_black(session)
     standard_di_check_outdated(session, extras, dilibraries)
+    session.log('You may run tasks like `vale` and `proselint` manually if you wish.')
+
+
+def standard_di_quality_check(session, extras=None, dilibraries=None):
+    """Check code for quality."""
+    common_setup(session, extras=extras, dilibraries=dilibraries)
+    standard_di_black_check(session)
+    standard_di_pylint(session, extras, dilibraries)
+    standard_di_flake8(session, extras, dilibraries)
+    standard_di_mypy(session, extras, dilibraries)
+    standard_di_pytype(session, extras, dilibraries)
+    standard_di_black(session)
+    standard_di_check_outdated(session, extras, dilibraries)
+    session.log('This task doesn\'t check with isort due the conflict with the black check')
     session.log('You may run tasks like `vale` and `proselint` manually if you wish.')
 
 
@@ -690,6 +704,7 @@ builtins.standard_di_black = standard_di_black
 builtins.standard_di_proselint = standard_di_proselint
 builtins.standard_di_vale = standard_di_vale
 builtins.standard_di_quality_task = standard_di_quality_task
+builtins.standard_di_quality_check = standard_di_quality_check
 builtins.main_python = main_python
 builtins.test_pythons = test_pythons
 builtins.kafka_presets = kafka_presets
