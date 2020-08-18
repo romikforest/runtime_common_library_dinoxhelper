@@ -3,6 +3,7 @@ import inspect
 import os
 import platform
 import shutil
+import sys
 from configparser import ConfigParser
 from os.path import dirname
 from os.path import exists as path_exists
@@ -48,11 +49,11 @@ nox.options.error_on_missing_interpreters = True
 
 def load_metadata():
     if isdir('src'):
-        spec = importlib.util.spec_from_file_location('metadata', join('src', 'metadata.py'))
+        spec = importlib.util.spec_from_file_location('metadata', os.path.abspath('src/metadata.py'))
         metadata = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(metadata)
         return metadata
-    spec = importlib.util.spec_from_file_location('setup', './setup.py')
+    spec = importlib.util.spec_from_file_location('setup', 'setup.py')
     setup_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(setup_module)
     return setup_module.metadata
@@ -351,6 +352,10 @@ def standard_di_docs(session, extras=None, dilibraries=None):
 
     common_setup(session, extras=extras, dilibraries=dilibraries)
 
+    if os.path.isdir('src'):
+        sys.path.insert(0, os.path.abspath('src'))
+    sys.path.insert(0, os.path.abspath('.'))
+    sys.setrecursionlimit(1500)
     metadata = load_metadata()
 
     session.install('-U', 'sphinx')
@@ -359,6 +364,7 @@ def standard_di_docs(session, extras=None, dilibraries=None):
     session.install('-U', 'sphinx-autodoc-typehints')
     session.install('-U', 'sphinx-markdown-tables')
     session.install('-U', 'sphinx_rtd_theme')
+    session.install('-U', 'sphinx-autoapi')
 
     if 'dipdf' in engines:
         if dipdf_base == 'rinoh':  # rinohtype is AGPL licensed !
@@ -366,10 +372,8 @@ def standard_di_docs(session, extras=None, dilibraries=None):
         elif dipdf_base == 'rst2pdf':
             session.install('-U', 'rst2pdf')
 
-    # # You can install any pypi package, e.g. sphinx-autoapi
+    # # You can install any pypi package
     # # Use extra_modules config variable
-    # session.install('-U', 'sphinx-autoapi')
-    # session.install('-U', 'pylatex')
     for module in extra_modules:
         session.install('-U', module)
 
