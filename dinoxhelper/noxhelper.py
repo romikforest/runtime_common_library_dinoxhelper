@@ -668,7 +668,7 @@ def standard_di_vale(session, dilibraries=None):
             session.run(
                 SHELL,
                 SHELL_EXEC,
-                f'{LOADER} {path.format(marker=marker)} | ' f'tar -C "vale/" -xvf - ' f'"vale"',
+                f'{LOADER} {path.format(marker=marker)} | tar -C "vale/" -xvf - "vale"',
                 external=True,
             )
 

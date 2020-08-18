@@ -3,6 +3,7 @@
 import os
 
 # pylint: disable=invalid-name
+# pylint: disable=redefined-builtin
 
 version_file = os.path.join(os.path.dirname(__file__), 'version.py')
 if os.path.isfile(version_file):
