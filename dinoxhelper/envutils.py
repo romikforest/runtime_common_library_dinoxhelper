@@ -1,6 +1,6 @@
 import os
-from subprocess import Popen, PIPE
 import pickle
+from subprocess import PIPE, Popen
 
 PYTHON_DUMP_ENVIRON = """\
 import sys

@@ -1,24 +1,23 @@
-.. Application documentation master file, created by
-   sphinx-quickstart on Wed Jun 10 01:36:06 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to library documentation!
-======================================
+=======================================================================
+  Welcome to DiNoxHelper library documentation!
+=======================================================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 3
+    :caption: Intro
 
-Library main
-===================
-.. automodule:: dinoxhelper
-   :members:
+    README
 
+.. toctree::
+    :maxdepth: 20
+    :caption: References
 
-Indices and tables
-==================
+    reference
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. .. toctree::
+    :maxdepth: 3
+    :caption: References
+    :glob:
+
+..    autoapi/*
+

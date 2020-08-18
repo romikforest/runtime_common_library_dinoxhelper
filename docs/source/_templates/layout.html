@@ -1,0 +1,10 @@
+{% extends "!layout.html" %}
+
+  {% block menu %}
+    {{ super() }}
+    <p class="caption"><span class="caption-text">Appendix</span></p>
+    <a href="{{pathto('_modules/index.html', 1)}}">Source code</a>
+    <a href="{{pathto('genindex.html', 1)}}">Index</a>
+    <a href="{{pathto('py-modindex.html', 1)}}">Module Index</a>
+    <a href="{{pathto('search.html', 1)}}">Search Page</a>
+  {% endblock %}

@@ -1,3 +1,9 @@
+/mypy_coverage/
+/code_coverage/
+/vale/
+/docs/source/_api_reference/
+/docs/source/_autosummary/
+
 .DS_Store
 thumbs.db
 *.tmp
@@ -27,6 +33,9 @@ _build/
 
 # pytest
 .pytest_cache
+
+# pytype
+.pytype/
 
 # C extensions
 *.so

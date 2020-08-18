@@ -1,10 +1,11 @@
+# flake8: noqa
+
 from pathlib import Path
-from setuptools import setup, find_packages
 
 from dinoxhelper import metadata
+from setuptools import find_packages, setup
 
-BUNDLES = {
-}
+BUNDLES = {}
 
 
 def strip_comments(l):
@@ -37,16 +38,19 @@ def extras_require():
     return {x: extras(x + '.txt') for x in BUNDLES}
 
 
-setup(name=metadata.name,
-      version=metadata.version,
-      url=metadata.url,
-      license=metadata.lib_license,
-      author=metadata.author,
-      author_email=metadata.author_email,
-      description=metadata.description,
-      packages=find_packages(exclude=['tests', 'examples', 'docs']),
-      python_requires='>=3.6.0',
-      install_requires=reqs('default.txt'),
-      extras_require=extras_require(),
-      long_description=open('README.md').read(),
-      zip_safe=False)
+if __name__ == '__main__':
+    setup(
+        name=metadata.name,
+        version=metadata.version,
+        url=metadata.url,
+        license=metadata.license,
+        author=metadata.author,
+        author_email=metadata.author_email,
+        description=metadata.description,
+        packages=find_packages(exclude=['tests', 'examples', 'docs']),
+        python_requires='>=3.6.0',
+        install_requires=reqs('default.txt'),
+        extras_require=extras_require(),
+        long_description=open('README.rst').read(),
+        zip_safe=False,
+    )

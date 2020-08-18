@@ -1,0 +1,28 @@
+/* Sidebar header (and topbar for mobile) */
+.wy-side-nav-search, .wy-nav-top {
+  background: #D21034;
+}
+/* Sidebar */
+.wy-nav-side {
+  background: #BDBEC0;
+}
+/*
+#2980b9 -> #D21034
+#343131 -> #BDBEC0
+hsla(0,0%,100%,.3) -> #000000
+#55a5d9 -> #003C79
+#d9d9d9 -> #616265
+#e74c3c -> #D21034
+#9b59b6 -> #b5207d
+#27ae60 -> #007e3a
+#6ab0de -> #003C79
+#4e4a4a -> #ffffff
+
+Темно синий #003C79
+Малиновый #b5207d
+Зеленый #007e3a
+Светло серый #BDBEC0
+Красный #D21034
+Темно серый #616265
+Белый #ffffff
+*/
