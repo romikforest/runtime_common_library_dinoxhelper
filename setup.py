@@ -37,8 +37,13 @@ def extras(*p):
 
 
 def extras_require():
-    return {**{x: extras(f'{x}.txt') for x in BUNDLES},
-            **{x: extras(f'pre-{x}.txt') for x in BUNDLES}}
+    deps = {x: extras(f'{x}.txt') for x in BUNDLES}
+    pre_deps = {x: extras(f'pre-{x}.txt') for x in BUNDLES}
+    keys = set(deps.keys()).union(set(pre_deps.keys()))
+    result = {}
+    for key in keys:
+        result[key] = list(set(deps.get(key, [])).union(set(pre_deps.get(key, []))))
+    return result
 
 
 if __name__ == '__main__':
