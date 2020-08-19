@@ -21,6 +21,8 @@ def _pip_requirement(req, *root):
 
 def _reqs(*f):
     path = (Path.cwd() / 'requirements').joinpath(*f)
+    if not path.is_file():
+        return []
     with path.open() as fh:
         reqs = [strip_comments(l) for l in fh.readlines()]
         return [_pip_requirement(r, *f[:-1]) for r in reqs if r]
@@ -35,7 +37,8 @@ def extras(*p):
 
 
 def extras_require():
-    return {x: extras(x + '.txt') for x in BUNDLES}
+    return {**{x: extras(f'{x}.txt') for x in BUNDLES},
+            **{x: extras(f'pre-{x}.txt') for x in BUNDLES}}
 
 
 if __name__ == '__main__':
@@ -49,7 +52,7 @@ if __name__ == '__main__':
         description=metadata.description,
         packages=find_packages(exclude=['tests', 'examples', 'docs']),
         python_requires='>=3.6.0',
-        install_requires=reqs('default.txt'),
+        install_requires=reqs('default.txt') + reqs('pre-default.txt'),
         extras_require=extras_require(),
         long_description=open('README.rst').read(),
         zip_safe=False,
