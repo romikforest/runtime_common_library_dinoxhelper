@@ -12,8 +12,7 @@
    {% if classes %}
    .. only:: not rinoh
 
-       Inheritance diagrams
-       ^^^^^^^^^^^^^^^^^^^^
+       .. rubric:: Inheritance diagrams
 
        .. inheritance-diagram:: {{ fullname }}
 
