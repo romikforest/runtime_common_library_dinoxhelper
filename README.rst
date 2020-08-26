@@ -1,3 +1,8 @@
+.. note::
+
+    This repository on github is just a task for job candidates. It's not for prodaction and it's not exactly the version we use.
+    
+
 DINOXHELPER
 ===========
 
